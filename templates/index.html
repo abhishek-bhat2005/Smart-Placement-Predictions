@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="hero rounded-4 p-5 text-white shadow-lg overflow-hidden">
+  <div class="row align-items-center">
+    <div class="col-lg-7">
+      <h1 class="display-5 fw-bold">Smart Placement Predictions For Every Student.</h1>
+      <p class="lead mt-3">Register and log in to access a modern dashboard, submit student details, and get instant placement outcome predictions.</p>
+      <div class="mt-4">
+        <a href="{{ url_for('register') }}" class="btn btn-light btn-lg me-2">Get Started</a>
+        <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-lg">Sign In</a>
+      </div>
+    </div>
+    <div class="col-lg-5 text-center">
+      <img src="https://cdn-icons-png.flaticon.com/512/1102/1102134.png" class="hero-image img-fluid" alt="Placement illustration" />
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mt-5">
+  <div class="col-md-4">
+    <div class="feature-card card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <h5 class="card-title">Secure login</h5>
+        <p class="card-text">Create an account and sign in with secure hashed passwords powered by Flask.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="feature-card card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <h5 class="card-title">Dashboard experience</h5>
+        <p class="card-text">A modern dashboard with prediction form, result cards, and student details summary.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="feature-card card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <h5 class="card-title">Data-backed model</h5>
+        <p class="card-text">A Decision Tree model trained from the placement dataset and reused across requests.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

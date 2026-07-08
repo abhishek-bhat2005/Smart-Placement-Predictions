@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-grid">
+  <div class="dashboard-card p-4 shadow-sm rounded-4 col-12">
+    <h3 class="mb-3">Prediction result</h3>
+    <div class="result-box p-4 rounded-4 {{ 'result-success' if prediction == 1 else 'result-failure' }}">
+      <h4>{{ display_message if display_message else ('Eligible for placements' if prediction == 1 else 'Not eligible for placements') }}</h4>
+      <p class="mb-0"><strong>Name:</strong> {{ candidate_name or 'Not provided' }}</p>
+      <p class="mb-0">Score: {{ prediction }}</p>
+      {% if eligibility_note %}
+      <p class="mt-2 text-muted">Note: {{ eligibility_note }}</p>
+      {% endif %}
+    </div>
+    <div class="mt-3">
+      <a href="{{ url_for('predict_form') }}" class="btn btn-outline-light me-2">Try another profile</a>
+      <a href="{{ url_for('dashboard') }}" class="btn btn-light">Back to dashboard</a>
+    </div>
+  </div>
+
+  <div class="dashboard-card p-4 shadow-sm rounded-4 col-12">
+    <h3 class="mb-3">Recent predictions</h3>
+    {% if history and history|length > 0 %}
+    <div class="table-responsive">
+      <table class="table table-borderless align-middle">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Date</th>
+            <th>Stream</th>
+            <th>Internships</th>
+            <th>Backlog</th>
+            <th>CGPA</th>
+            <th>Result</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for record in history %}
+          <tr>
+            <td>{{ record.name or '—' }}</td>
+            <td>{{ record.created_at }}</td>
+            <td>{{ stream_labels[record.stream] if stream_labels and record.stream in stream_labels else record.stream }}</td>
+            <td>{{ record.internships }}</td>
+            <td>{{ 'Yes' if record.backlog == 1 else 'No' }}</td>
+            <td>{{ record.cgpa }}</td>
+            <td>{{ 'Eligible for placements' if record.prediction == 1 else 'Not eligible for placements' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted">No prediction history yet. Run a placement check to save your first result.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-grid">
+  <div class="dashboard-card p-4 shadow-sm rounded-4 col-12">
+    <h3 class="mb-3">Admin panel</h3>
+    <p class="text-muted">View registered users and recent prediction activity.</p>
+  </div>
+
+  <div class="dashboard-card p-4 shadow-sm rounded-4 col-12">
+    <h5 class="mb-3">Registered users</h5>
+    <div class="table-responsive">
+      <table class="table table-borderless align-middle">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Admin</th>
+            <th>Last login</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in users %}
+          <tr>
+            <td>{{ user.username }}</td>
+            <td>{{ user.email }}</td>
+            <td>{{ 'Yes' if user.is_admin == 1 else 'No' }}</td>
+            <td>{{ user.last_login or 'Never' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="dashboard-card p-4 shadow-sm rounded-4 col-12">
+    <h5 class="mb-3">Prediction activity</h5>
+    <div class="table-responsive">
+      <table class="table table-borderless align-middle">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Total predictions</th>
+            <th>Last prediction</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for stat in stats %}
+          <tr>
+            <td>{{ stat.user_email }}</td>
+            <td>{{ stat.total_predictions }}</td>
+            <td>{{ stat.last_prediction }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

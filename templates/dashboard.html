@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block content %}
+  
+  <div class="container">
+    <!-- Eligibility card (centered) -->
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-8 col-lg-6 mb-4">
+        <div class="dashboard-card p-4 shadow-sm rounded-4">
+          <h3 class="mb-2">Eligibility & Data used</h3>
+          <p class="text-muted mb-2">Model checks treat CGPA &ge; 6.0 and no active backlogs as primary eligibility signals. The Decision Tree uses 7 features and was trained on <strong>{{ dataset_rows }}</strong> rows.</p>
+          <h5 class="mt-3">Eligibility rules</h5>
+          <ul class="list-group list-group-flush mt-2">
+            <li class="list-group-item">Age must be between 18 and 28</li>
+            <li class="list-group-item">CGPA must be at least 6.0</li>
+            <li class="list-group-item">No active backlogs</li>
+            <li class="list-group-item">Valid internship and stream values are required</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick summary (centered) -->
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-8 col-lg-6 mb-4">
+        <div class="dashboard-card p-4 shadow-sm rounded-4">
+          <h3 class="mb-3">Quick Summary</h3>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item">Logged in as: <strong>{{ current_user.username }}</strong></li>
+            <li class="list-group-item">Total features: 7</li>
+            <li class="list-group-item">Model type: Decision Tree</li>
+            <li class="list-group-item">Dataset rows: {{ dataset_rows }}</li>
+          </ul>
+          <div class="mt-3">
+            <a href="{{ url_for('predict_form') }}" class="btn btn-primary">Start prediction</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent predictions (centered) -->
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-10 col-lg-8">
+        <div class="dashboard-card p-4 shadow-sm rounded-4">
+          <h3 class="mb-3">Recent Predictions</h3>
+          {% if history and history|length > 0 %}
+          <div class="table-responsive">
+            <table class="table table-borderless align-middle">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Date</th>
+                  <th>Stream</th>
+                  <th>Internships</th>
+                  <th>Backlog</th>
+                  <th>CGPA</th>
+                  <th>Result</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for record in history %}
+                <tr>
+                  <td>{{ record.name or '—' }}</td>
+                  <td>{{ record.created_at }}</td>
+                  <td>{{ stream_labels[record.stream] if stream_labels and record.stream in stream_labels else record.stream }}</td>
+                  <td>{{ record.internships }}</td>
+                  <td>{{ 'Yes' if record.backlog == 1 else 'No' }}</td>
+                  <td>{{ record.cgpa }}</td>
+                  <td>{{ 'Eligible for placements' if record.prediction == 1 else 'Not eligible for placements' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-muted">No prediction history yet. Run a placement check to save your first result.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

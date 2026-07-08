@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+  <!-- Quick summary centered at top -->
+  <div class="row justify-content-center mb-3">
+    <div class="col-12 col-md-8 col-lg-6">
+      <div class="dashboard-card p-4 shadow-sm rounded-4">
+        <h3 class="mb-3">Quick summary</h3>
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item">Logged in as: <strong>{{ current_user.username }}</strong></li>
+          <li class="list-group-item">Total features: 7</li>
+          <li class="list-group-item">Model type: Decision Tree</li>
+          <li class="list-group-item">Dataset rows: {{ dataset_rows }}</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form centered below -->
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+      <div class="dashboard-card p-4 shadow-sm rounded-4">
+        <h3 class="mb-3 text-center">Prediction form</h3>
+        <form method="POST" action="{{ url_for('predict') }}">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Name</label>
+              <input type="text" class="form-control" name="name" placeholder="Enter student name" required />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Age</label>
+              <input type="number" class="form-control" name="age" min="18" max="28" required />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Gender</label>
+              <select class="form-select" name="gender" required>
+                <option value="0">Female</option>
+                <option value="1">Male</option>
+              </select>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Stream</label>
+              <select class="form-select" name="stream" required>
+                <option value="1">Electronics</option>
+                <option value="2">Computer Science</option>
+                <option value="3">Information Technology</option>
+                <option value="4">Mechanical</option>
+                <option value="5">Electrical</option>
+                <option value="6">Civil</option>
+              </select>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Internships</label>
+              <select class="form-select" name="internship" required>
+                <option value="0">0</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+              </select>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Hostel</label>
+              <select class="form-select" name="hostel" required>
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+              </select>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Backlog</label>
+              <select class="form-select" name="backlog" required>
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+              </select>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">CGPA</label>
+              <input type="number" step="0.1" class="form-control" name="cgpa" min="0" max="10" required />
+            </div>
+          </div>
+          <div class="d-flex justify-content-center mt-4">
+            <button type="submit" class="btn btn-primary me-2">Run Prediction</button>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-light">Back to dashboard</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+      <!-- Recent predictions (saved results) -->
+      <div class="row justify-content-center mt-4">
+        <div class="col-12 col-md-10 col-lg-8">
+          <div class="dashboard-card p-4 shadow-sm rounded-4">
+            <h3 class="mb-3">Recent predictions</h3>
+            {% if history and history|length > 0 %}
+            <div class="table-responsive">
+              <table class="table table-borderless align-middle">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Date</th>
+                    <th>Stream</th>
+                    <th>Internships</th>
+                    <th>Backlog</th>
+                    <th>CGPA</th>
+                    <th>Result</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for record in history %}
+                  <tr>
+                    <td>{{ record.name or '—' }}</td>
+                    <td>{{ record.created_at }}</td>
+                    <td>{{ stream_labels[record.stream] if stream_labels and record.stream in stream_labels else record.stream }}</td>
+                    <td>{{ record.internships }}</td>
+                    <td>{{ 'Yes' if record.backlog == 1 else 'No' }}</td>
+                    <td>{{ record.cgpa }}</td>
+                    <td>{{ 'Eligible for placements' if record.prediction == 1 else 'Not eligible for placements' }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+            <p class="text-muted">No prediction history yet. Run a placement check to save your first result.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+</div>
+{% endblock %}

@@ -1,0 +1,209 @@
+body {
+  background: linear-gradient(180deg, #0b172b 0%, #16294c 100%);
+  color: #f8fafc;
+  min-height: 100vh;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.site-navbar {
+  background: rgba(15, 23, 42, 0.95);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.navbar-brand,
+.nav-link {
+  color: #f8fafc !important;
+}
+
+.nav-link:hover {
+  color: #a5b4fc !important;
+}
+
+.main-content {
+  min-height: calc(100vh - 160px);
+}
+
+.hero {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  border-radius: 28px;
+  padding: 48px;
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.08);
+}
+
+.hero-image {
+  max-height: 360px;
+}
+
+.feature-card,
+.auth-card .card,
+.dashboard-card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
+}
+
+.feature-card {
+  color: #f8fafc;
+}
+
+.feature-card .card-body,
+.auth-card .card-body {
+  background: transparent;
+}
+
+.feature-card .card-title,
+.feature-card .card-text,
+.auth-card .form-label,
+.auth-card .form-control,
+.auth-card .form-select {
+  color: #f8fafc;
+}
+
+.auth-card {
+  max-width: 620px;
+}
+
+.auth-card .form-control,
+.auth-card .form-select {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.auth-card .form-control::placeholder,
+.auth-card .form-select option {
+  color: rgba(248, 249, 250, 0.75);
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 28px;
+}
+
+.dashboard-card {
+  min-height: 380px;
+  padding: 32px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+  color: #f8fafc;
+}
+
+.dashboard-card h3,
+.dashboard-card .form-label,
+.dashboard-card .form-control,
+.dashboard-card .form-select,
+.dashboard-card .table,
+.dashboard-card .table th,
+.dashboard-card .table td,
+.dashboard-card p,
+.dashboard-card li {
+  color: #f8fafc;
+}
+
+.dashboard-card .form-control,
+.dashboard-card .form-select {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.dashboard-card .form-control::placeholder {
+  color: rgba(248, 249, 250, 0.75);
+}
+
+.form-select option,
+.dashboard-card .form-select option,
+.auth-card .form-select option {
+  color: #0f172a;
+  background: #ffffff;
+}
+
+.form-select:focus,
+.auth-card .form-select:focus,
+.dashboard-card .form-select:focus {
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.result-box {
+  border-radius: 24px;
+}
+
+/* Make list-group items and tables fit the dark dashboard cards */
+.dashboard-card .list-group-item {
+  background: transparent;
+  color: #f8fafc;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  margin-bottom: 8px;
+  border-radius: 0.75rem;
+}
+.dashboard-card .list-group-item:last-child {
+  margin-bottom: 0;
+}
+.dashboard-card .list-group {
+  background: transparent;
+  padding: 0;
+}
+.dashboard-card .table {
+  background: transparent;
+  color: #f8fafc;
+}
+.dashboard-card .table thead th,
+.dashboard-card .table tbody td {
+  background: transparent;
+  color: #f8fafc;
+  border-color: rgba(255, 255, 255, 0.04);
+}
+.dashboard-card .text-muted {
+  color: rgba(248, 249, 250, 0.68) !important;
+}
+
+.result-success {
+  background: rgba(16, 185, 129, 0.12);
+  color: #0f766e;
+}
+
+.result-failure {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+}
+
+footer.footer {
+  background: rgba(15, 23, 42, 0.95);
+  color: #cbd5e1;
+}
+
+.card,
+.form-control,
+.form-select {
+  border-radius: 1.25rem;
+}
+
+.table td,
+.table th {
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.btn-primary {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.btn-primary:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+
+@media (min-width: 768px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1200px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

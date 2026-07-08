@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+users.db
+.env
+instance/
+.DS_Store
+.vscode/
