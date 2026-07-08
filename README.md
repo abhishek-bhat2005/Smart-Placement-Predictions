@@ -1,38 +1,34 @@
-
 # Student Placement Prediction Web App
 
 ## Overview
-This is a Flask-based web application that predicts whether a student is likely to be placed in a job based on input features such as age, gender, academic stream, internship experience, hostel status, CGPA, and backlog history. The application uses a Decision Tree Classifier trained on a dataset's features to make predictions.
-
-![image](https://github.com/user-attachments/assets/6eafd86a-2e85-472a-95af-8cc69706939c)
-
+This is a Flask-based web application that predicts whether a student is likely to be placed in a job based on input features such as age, gender, academic stream, internship experience, hostel status, CGPA, and backlog history. The application uses a Decision Tree Classifier trained on dataset features to make predictions.
 
 ## Features
-- **Input Form**: Allows users to enter student details, including age, gender, stream, internship count, hostel status, CGPA, and backlogs, through a web interface.
-- **Prediction**: Predicts placement status (e.g., "Placed" or "Not Placed") using a trained Decision Tree Classifier.
-- **Web Interface**: Built with Flask and rendered using an HTML template (`placement.html`).
-- **Dataset**: Uses a local dataset (`studentPlacement.csv`) for training the model.
-
+- **Input Form**: Allows users to enter student details, including name, age, gender, stream, internship count, hostel status, CGPA, and backlogs.
+- **Eligibility Check**: Uses predefined rules for age, CGPA, and backlogs before the ML prediction.
+- **Prediction**: Predicts placement eligibility using a trained Decision Tree Classifier.
+- **Web Interface**: Built with Flask and rendered using Jinja2 templates.
+- **History**: Saves predictions per logged-in user and displays recent results on the dashboard.
 
 ## Requirements
-To run this project, you need the following Python packages:
+To run this project, install the following Python packages:
 - Flask
 - pandas
 - numpy
 - scikit-learn
-- werkzeug
+- Werkzeug
 
-You can install the dependencies using:
+Install dependencies with:
 ```bash
 pip install -r requirements.txt
 ```
 
 ## Project Structure
-- **app.py**: The main Flask application with user registration, login, and dashboard prediction flow.
-- **templates/**: Jinja2 templates for the homepage, auth pages, and dashboard.
-- **static/css/style.css**: Custom styling for the new UI.
-- **collegePlacement_cleanData.csv**: The dataset file used to train the prediction model.
-- **requirements.txt**: Python dependencies.
+- **app.py**: Flask application with registration, login, dashboard, prediction form, and result pages.
+- **templates/**: HTML templates for the web UI.
+- **static/css/style.css**: Custom dark-theme styling.
+- **collegePlacement_cleanData.csv**: Dataset used to train the model.
+- **requirements.txt**: Python package requirements.
 
 ## Running Locally
 1. Install dependencies:
@@ -46,47 +42,38 @@ python app.py
 3. Open a browser at `http://127.0.0.1:5000`
 
 ## Notes
-- The app now supports registration and login using an in-memory user store.
-- The model is trained once at startup and reused for every prediction.
-- Replace the `FLASK_SECRET_KEY` environment variable in production.
+- The app supports user registration and login.
+- The model trains once at startup and is reused for predictions.
+- Replace `FLASK_SECRET_KEY` with a secure environment value in deployment.
 
 ## How It Works
-1. The application loads the student placement dataset from a local CSV file (`studentPlacement.csv`).
-2. A Decision Tree Classifier is trained on the dataset's features (age, gender, stream, internship, hostel, CGPA, backlog) to predict placement status.
-3. Users access the web interface at the root URL (`/`), where they can input student details.
-4. Upon form submission, the app processes the input, makes a prediction, and displays the predicted placement status on the same page.
+1. The app loads the dataset from `collegePlacement_cleanData.csv`.
+2. It trains a Decision Tree Classifier on features like age, gender, stream, internships, hostel, CGPA, and backlog history.
+3. Users log in and submit student details on the prediction form.
+4. The app checks eligibility, runs the model, and shows if the candidate is "Eligible for placements" or "Not eligible for placements." 
 
 ## Usage
-1. **Clone the Repository**:
+1. **Clone the repository**:
    ```bash
-   git clone https://github.com/lovnishverma/placement-prediction.git
-   cd placement-prediction
-   ```
-
-2. **Prepare the Dataset**:
-   Ensure the `studentPlacement.csv` file is placed in the project directory.
-
-3. **Install Dependencies**:
+git clone https://github.com/abhishek-bhat2005/Smart-Placement-Predictions.git
+cd Smart-Placement-Predictions
+```
+2. **Install dependencies**:
    ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Run the Application**:
+pip install -r requirements.txt
+```
+3. **Run the application**:
    ```bash
-   python app.py
-   ```
-
-5. **Access the Web App**:
-   Open a browser and navigate to `http://127.0.0.1:5000`.
-
-6. **Input Student Details**:
-   Enter the required details (age, gender, stream, internship, hostel, CGPA, backlog) in the form, then submit to see the predicted placement status.
+python app.py
+```
+4. **Open the web app**:
+   `http://127.0.0.1:5000`
 
 ## Notes
-- Ensure the `placement.html` template is present in the `templates` folder, as it is required for rendering the web interface.
-- The dataset (`studentPlacement.csv`) must be available in the project directory, as the app reads it locally.
-- The `eval` function is used to parse some form inputs, which is not recommended for production due to security risks. Consider using safer alternatives like `float` or `int` for parsing in a production environment.
-- The dataset's structure is assumed to have features in the first columns and the target variable (placement status) in the last column, with the second-to-last column excluded (as per the code).
+- Ensure the dataset file `collegePlacement_cleanData.csv` is present in the project directory.
+- The web app uses a local SQLite database for users and predictions.
+- For deployment, consider using environment variables for `FLASK_SECRET_KEY` and database configuration.
 
 ## License
 This project is licensed under the MIT License.
+
