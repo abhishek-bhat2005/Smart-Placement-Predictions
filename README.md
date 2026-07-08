@@ -74,6 +74,3 @@ python app.py
 - The web app uses a local SQLite database for users and predictions.
 - For deployment, consider using environment variables for `FLASK_SECRET_KEY` and database configuration.
 
-## License
-This project is licensed under the MIT License.
-
