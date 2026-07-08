@@ -1,6 +1,10 @@
 import os
 import re
 import sqlite3
+try:
+    from pymongo import MongoClient
+except Exception:
+    MongoClient = None
 from functools import wraps
 from flask import Flask, flash, g, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -54,6 +58,30 @@ def get_db_connection():
     return g.db
 
 
+def use_mongo():
+    return bool(os.environ.get("MONGO_URI")) and MongoClient is not None
+
+
+def mongo_get_db():
+    # return a database object; cache client in g
+    if not use_mongo():
+        return None
+    if hasattr(g, "mongo_db") and getattr(g, "mongo_db") is not None:
+        return g.mongo_db
+    uri = os.environ.get("MONGO_URI")
+    client = MongoClient(uri)
+    # try to get default DB from URI, otherwise use 'placement_app'
+    try:
+        db = client.get_default_database()
+        if db is None:
+            db = client["placement_app"]
+    except Exception:
+        db = client["placement_app"]
+    g.mongo_client = client
+    g.mongo_db = db
+    return db
+
+
 def column_exists(conn, table_name, column_name):
     cursor = conn.execute(f"PRAGMA table_info({table_name})")
     return any(row[1] == column_name for row in cursor.fetchall())
@@ -72,14 +100,38 @@ def create_default_admin(conn):
         print(f"Created default admin: {admin_email}")
 
 
+def create_default_admin_mongo():
+    if not use_mongo():
+        return
+    db = mongo_get_db()
+    users = db.users
+    admin_email = os.environ.get("ADMIN_EMAIL", "admin@placementpro.com").strip().lower()
+    admin_password = os.environ.get("ADMIN_PASSWORD", "admin123")
+    row = users.find_one({"email": admin_email})
+    if not row:
+        password_hash = generate_password_hash(admin_password)
+        users.insert_one({"username": "Administrator", "email": admin_email, "password_hash": password_hash, "is_admin": True, "last_login": None})
+        print(f"Created default admin in MongoDB: {admin_email}")
+
+
 @app.teardown_appcontext
 def close_db(exception=None):
     db = g.pop("db", None)
     if db is not None:
         db.close()
+    # close mongo client if present
+    mongo_client = g.pop("mongo_client", None)
+    if mongo_client is not None:
+        try:
+            mongo_client.close()
+        except Exception:
+            pass
 
 
 def init_db():
+    # If MongoDB is configured, skip creating local SQLite schema
+    if use_mongo():
+        return
     conn = sqlite3.connect(DB_PATH)
     conn.execute(
         """
@@ -133,20 +185,28 @@ def init_db():
 # Initialize resources upon module import so Flask 3 compatibility is preserved.
 init_db()
 load_model()
+# Do not create the default admin during module import — defer until an application
+# context is available (avoids "Working outside of application context" errors).
 
 
 @app.context_processor
 def inject_user():
     user_email = session.get("user_email")
     if user_email:
-        db = get_db_connection()
-        row = db.execute("SELECT username, email, password_hash, is_admin, last_login FROM users WHERE email = ?", (user_email,)).fetchone()
-        if row:
-            return {
-                "current_user": User(
-                    row["username"], row["email"], row["password_hash"], row["is_admin"], row["last_login"]
-                )
-            }
+        if use_mongo():
+            mdb = mongo_get_db()
+            row = mdb.users.find_one({"email": user_email})
+            if row:
+                return {"current_user": User(row.get("username"), row.get("email"), row.get("password_hash"), row.get("is_admin", False), row.get("last_login"))}
+        else:
+            db = get_db_connection()
+            row = db.execute("SELECT username, email, password_hash, is_admin, last_login FROM users WHERE email = ?", (user_email,)).fetchone()
+            if row:
+                return {
+                    "current_user": User(
+                        row["username"], row["email"], row["password_hash"], row["is_admin"], row["last_login"]
+                    )
+                }
     return {"current_user": type("Anon", (), {"is_authenticated": False, "is_admin": False})()}
 
 
@@ -173,11 +233,18 @@ def admin_required(view_func):
         if not user_email:
             flash("Please log in to access this page.", "warning")
             return redirect(url_for("login"))
-        db = get_db_connection()
-        row = db.execute("SELECT is_admin FROM users WHERE email = ?", (user_email,)).fetchone()
-        if not row or row["is_admin"] != 1:
-            flash("Admin access required.", "danger")
-            return redirect(url_for("dashboard"))
+        if use_mongo():
+            mdb = mongo_get_db()
+            row = mdb.users.find_one({"email": user_email})
+            if not row or not row.get("is_admin"):
+                flash("Admin access required.", "danger")
+                return redirect(url_for("dashboard"))
+        else:
+            db = get_db_connection()
+            row = db.execute("SELECT is_admin FROM users WHERE email = ?", (user_email,)).fetchone()
+            if not row or row["is_admin"] != 1:
+                flash("Admin access required.", "danger")
+                return redirect(url_for("dashboard"))
         return view_func(*args, **kwargs)
 
     return wrapped
@@ -203,20 +270,32 @@ def register():
         elif password != confirm_password:
             flash("Passwords do not match.", "danger")
         else:
-            db = get_db_connection()
-            existing = db.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
-            if existing:
-                flash("This email is already registered.", "danger")
+            if use_mongo():
+                mdb = mongo_get_db()
+                existing = mdb.users.find_one({"email": email})
+                if existing:
+                    flash("This email is already registered.", "danger")
+                else:
+                    password_hash = generate_password_hash(password)
+                    mdb.users.insert_one({"username": username, "email": email, "password_hash": password_hash, "is_admin": False, "last_login": None})
+                    session["user_email"] = email
+                    flash("Registration successful. Welcome!", "success")
+                    return redirect(url_for("dashboard"))
             else:
-                password_hash = generate_password_hash(password)
-                db.execute(
-                    "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
-                    (username, email, password_hash),
-                )
-                db.commit()
-                session["user_email"] = email
-                flash("Registration successful. Welcome!", "success")
-                return redirect(url_for("dashboard"))
+                db = get_db_connection()
+                existing = db.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
+                if existing:
+                    flash("This email is already registered.", "danger")
+                else:
+                    password_hash = generate_password_hash(password)
+                    db.execute(
+                        "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
+                        (username, email, password_hash),
+                    )
+                    db.commit()
+                    session["user_email"] = email
+                    flash("Registration successful. Welcome!", "success")
+                    return redirect(url_for("dashboard"))
 
     return render_template("register.html")
 
@@ -226,20 +305,31 @@ def login():
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
-        db = get_db_connection()
-        row = db.execute(
-            "SELECT username, email, password_hash FROM users WHERE email = ?",
-            (email,),
-        ).fetchone()
-
-        if not row or not check_password_hash(row["password_hash"], password):
-            flash("Invalid email or password.", "danger")
+        if use_mongo():
+            mdb = mongo_get_db()
+            row = mdb.users.find_one({"email": email})
+            if not row or not check_password_hash(row.get("password_hash", ""), password):
+                flash("Invalid email or password.", "danger")
+            else:
+                session["user_email"] = row["email"]
+                mdb.users.update_one({"email": row["email"]}, {"$set": {"last_login": pd.Timestamp.now().to_pydatetime()}})
+                flash("Login successful.", "success")
+                return redirect(url_for("dashboard"))
         else:
-            session["user_email"] = row["email"]
-            db.execute("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE email = ?", (row["email"],))
-            db.commit()
-            flash("Login successful.", "success")
-            return redirect(url_for("dashboard"))
+            db = get_db_connection()
+            row = db.execute(
+                "SELECT username, email, password_hash FROM users WHERE email = ?",
+                (email,),
+            ).fetchone()
+
+            if not row or not check_password_hash(row["password_hash"], password):
+                flash("Invalid email or password.", "danger")
+            else:
+                session["user_email"] = row["email"]
+                db.execute("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE email = ?", (row["email"],))
+                db.commit()
+                flash("Login successful.", "success")
+                return redirect(url_for("dashboard"))
 
     return render_template("login.html")
 
@@ -252,13 +342,19 @@ def logout():
 
 
 def get_user_predictions(user_email, limit=5):
-    db = get_db_connection()
-    rows = db.execute(
-        "SELECT name, age, gender, stream, internships, hostel, backlog, cgpa, prediction, eligibility_notes, created_at "
-        "FROM predictions WHERE user_email = ? ORDER BY created_at DESC LIMIT ?",
-        (user_email, limit),
-    ).fetchall()
-    return rows
+    if use_mongo():
+        mdb = mongo_get_db()
+        cursor = mdb.predictions.find({"user_email": user_email}).sort("created_at", -1).limit(limit)
+        # return list of dict-like objects
+        return list(cursor)
+    else:
+        db = get_db_connection()
+        rows = db.execute(
+            "SELECT name, age, gender, stream, internships, hostel, backlog, cgpa, prediction, eligibility_notes, created_at "
+            "FROM predictions WHERE user_email = ? ORDER BY created_at DESC LIMIT ?",
+            (user_email, limit),
+        ).fetchall()
+        return rows
 
 
 @app.route("/dashboard", methods=["GET"])
@@ -320,12 +416,30 @@ def predict():
             eligibility_notes = "Standard eligibility met."
             display_message = "Eligible for placements" if prediction == 1 else "Not eligible for placements"
 
-        db = get_db_connection()
-        db.execute(
-            "INSERT INTO predictions (user_email, name, age, gender, stream, internships, hostel, backlog, cgpa, prediction, eligibility_notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (session["user_email"], name, age, gender, stream, internships, hostel, backlog, cgpa, prediction, eligibility_notes),
-        )
-        db.commit()
+        if use_mongo():
+            mdb = mongo_get_db()
+            doc = {
+                "user_email": session["user_email"],
+                "name": name,
+                "age": age,
+                "gender": gender,
+                "stream": stream,
+                "internships": internships,
+                "hostel": hostel,
+                "backlog": backlog,
+                "cgpa": cgpa,
+                "prediction": int(prediction),
+                "eligibility_notes": eligibility_notes,
+                "created_at": pd.Timestamp.now().to_pydatetime(),
+            }
+            mdb.predictions.insert_one(doc)
+        else:
+            db = get_db_connection()
+            db.execute(
+                "INSERT INTO predictions (user_email, name, age, gender, stream, internships, hostel, backlog, cgpa, prediction, eligibility_notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (session["user_email"], name, age, gender, stream, internships, hostel, backlog, cgpa, prediction, eligibility_notes),
+            )
+            db.commit()
 
         history = get_user_predictions(session["user_email"])
         return render_template(
@@ -346,17 +460,32 @@ def predict():
 @app.route("/admin")
 @admin_required
 def admin_panel():
-    db = get_db_connection()
-    users = db.execute(
-        "SELECT username, email, is_admin, last_login FROM users ORDER BY is_admin DESC, username"
-    ).fetchall()
-    stats = db.execute(
-        "SELECT user_email, COUNT(*) AS total_predictions, MAX(created_at) AS last_prediction "
-        "FROM predictions GROUP BY user_email ORDER BY last_prediction DESC LIMIT 20"
-    ).fetchall()
-    return render_template("admin.html", users=users, stats=stats)
+    if use_mongo():
+        mdb = mongo_get_db()
+        users = list(mdb.users.find({}, {"password_hash": 0}).sort([("is_admin", -1), ("username", 1)]))
+        stats_cursor = mdb.predictions.aggregate([
+            {"$group": {"_id": "$user_email", "total_predictions": {"$sum": 1}, "last_prediction": {"$max": "$created_at"}}},
+            {"$sort": {"last_prediction": -1}},
+            {"$limit": 20},
+        ])
+        stats = list(stats_cursor)
+        return render_template("admin.html", users=users, stats=stats)
+    else:
+        db = get_db_connection()
+        users = db.execute(
+            "SELECT username, email, is_admin, last_login FROM users ORDER BY is_admin DESC, username"
+        ).fetchall()
+        stats = db.execute(
+            "SELECT user_email, COUNT(*) AS total_predictions, MAX(created_at) AS last_prediction "
+            "FROM predictions GROUP BY user_email ORDER BY last_prediction DESC LIMIT 20"
+        ).fetchall()
+        return render_template("admin.html", users=users, stats=stats)
 
 
 if __name__ == "__main__":
     load_model()
+    # Ensure default admin in Mongo (if configured) runs inside app context
+    with app.app_context():
+        if use_mongo():
+            create_default_admin_mongo()
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
